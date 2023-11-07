@@ -4,6 +4,25 @@ from tkinter import ttk
 import tensorflow as tf
 from PIL import Image, ImageTk
 import matplotlib.pyplot as plt
+import mysql.connector
+import openpyxl
+
+# Datos de conexión a MySQL
+db_host = "localhost"
+db_user = "danny"
+db_password = "danny"
+db_name = "sistema_consumo"
+
+# Crear una conexión a la base de datos
+conexion = mysql.connector.connect(
+    host=db_host,
+    user=db_user,
+    password=db_password,
+    database=db_name
+)
+
+# Crear un cursor para ejecutar consultas SQL
+cursor = conexion.cursor()
 
 # Datos de entrada
 años = np.array([1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017])
@@ -39,32 +58,95 @@ def predecir_consumo_tensorflow():
 
     # Mostrar el gráfico
     plt.show()
+
+
+def insertar():
+    try:
+        año = float(entry_año.get())
+        consumo = float(label_resultado.cget("text").split(":")[1].strip())  # Obtiene el valor del label_resultado
+         # Ejecuta la consulta para insertar en la tabla de consumo
+        consulta = "INSERT INTO consumido (año, cosumo) VALUES (%s, %s)"
+        valores = (año, consumo)
+        cursor.execute(consulta, valores)
+        conexion.commit()
+
+        label_resultado.config(text="Consumo registrado en la base de datos")
+        # Intenta ejecutar una consulta simple para verificar la conexión
+        #cursor.execute("SELECT 1")
+        #label_resultado.config(text="Conexión a la base de datos exitosa")
+    except mysql.connector.Error as error:
+        label_resultado.config(text=f"Error de conexión a la base de datos: {error}")
+
+
+def exportar():
+    try: 
+      cursor.execute("SELECT año, cosumo FROM consumido")
+      resultados = cursor.fetchall()
+      #label_resultado.config(text="Archivo exportado")
+      # Crear un nuevo libro de trabajo de Excel y una hoja de cálculo
+      workbook = openpyxl.Workbook()
+      sheet = workbook.active
+
+      # Escribir los resultados en la hoja de cálculo
+      sheet.cell(row=1, column=1, value="Año")
+      sheet.cell(row=1, column=2, value="Consumo")
+
+      for idx, resultado in enumerate(resultados, start=2):
+            año, consumo = resultado
+            sheet.cell(row=idx, column=1, value=año)
+            sheet.cell(row=idx, column=2, value=consumo)
+
+        # Guardar el archivo Excel
+      workbook.save("resultados_consumo.xlsx")
+
+      label_resultado.config(text="Resultados exportados a resultados_consumo.xlsx")
+    except mysql.connector.Error as error:
+        label_resultado.config(text=f"Error al exportar los resultados: {error}")
+
+
+# Función para mostrar los resultados de la tabla "consumido"
+def mostrar_resultados():
+    try:
+        # Ejecuta una consulta SQL para obtener todos los registros de la tabla "consumido"
+        cursor.execute("SELECT año, cosumo FROM consumido")
+        resultados = cursor.fetchall()
+
+        # Borra todos los elementos actuales en la tabla
+        for i in tabla.get_children():
+            tabla.delete(i)
+
+        # Inserta los nuevos resultados en la tabla
+        for resultado in resultados:
+            tabla.insert("", "end", values=resultado)
+            #label_resultado.config(text="Resultados de la consulta:")
+    except mysql.connector.Error as error:
+        label_resultado.config(text=f"Error al obtener los resultados: {error}")
+
+
+
+
     
 # Crear la ventana de la aplicación
 ventana = tk.Tk()
 ventana.title("Predicción de Consumo Eléctrico")
-ventana.geometry("400x400")
+ventana.geometry("400x600")
 
 ##################################################################
 # Crear un Treeview (tabla)
-#tabla = ttk.Treeview(ventana, columns=("Año", "Consumo electrico"))
-## Definir las columnas
-#tabla.heading("#1", text="Nombre")
-#tabla.heading("#2", text="Edad")
-# Configurar el ancho de las columnas
-#tabla.column("#1", width=50)
-#tabla.column("#2", width=50)
-# Insertar datos en la tabla (datos ficticios)
-#tabla.insert("", "end", values=("Juan", 30))
-#tabla.insert("", "end", values=("María", 25))
-#tabla.insert("", "end", values=("Carlos", 35))
-#tabla.insert("", "end", values=("Luisa", 28,))
+tabla = ttk.Treeview(ventana, columns=("Año", "Consumo"), show="headings")
+tabla.heading("#1", text="Año")
+tabla.heading("#2", text="Consumo")
+tabla.column("#1", width=100)
+tabla.column("#2", width=100)
+mostrar_resultados()
 ##################################################################
 
 # Crear elementos de la interfaz
 label_año = tk.Label(ventana, text="Año de consumo a predecir:")
 entry_año = tk.Entry(ventana)
 boton_predecir_tensorflow = tk.Button(ventana, text="Predecir (TensorFlow)", command=predecir_consumo_tensorflow)
+boton = tk.Button(ventana, text="Exportar", command=exportar) #boton de exportar
+boton_registrar = tk.Button(ventana, text="Registrar consumo", command=insertar) #boton de exportar
 label_resultado = tk.Label(ventana, text="")
 label_imagen = tk.Label(ventana)
 
@@ -81,7 +163,10 @@ label_año.pack()
 entry_año.pack()
 boton_predecir_tensorflow.pack()
 label_resultado.pack()
-#tabla.pack()
+tabla.pack()
+boton_registrar.pack()
+boton.pack()
+
 
 # Iniciar la ventana
 ventana.mainloop()
