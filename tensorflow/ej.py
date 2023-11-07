@@ -24,9 +24,27 @@ conexion = mysql.connector.connect(
 # Crear un cursor para ejecutar consultas SQL
 cursor = conexion.cursor()
 
+
+def obtener_datos_desde_bd():
+    try:
+        cursor.execute("SELECT año, cosumo FROM consumido")  # Reemplaza 'tus_datos_tabla' con el nombre correcto de tu tabla
+        resultados = cursor.fetchall()
+        años = []
+        consumos = []
+        for resultado in resultados:
+            año, consumo = resultado
+            años.append(float(año))  # Convierte la cadena en número de punto flotante
+            consumos.append(float(consumo))  # Convierte la cadena en número de punto flotante
+        return np.array(años), np.array(consumos)
+    except mysql.connector.Error as error:
+        print(f"Error al obtener datos desde la base de datos: {error}")
+        return np.array([]), np.array([])
+    
+años, consumos = obtener_datos_desde_bd()
+
 # Datos de entrada
-años = np.array([1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017])
-consumos = np.array([126.56, 128.53, 132.66, 138.75, 147.05, 151.21, 154.75, 156.69, 155.46, 160.90, 165.60, 173.37, 189.14, 193.39, 205.63, 220.92, 233.07, 239.91, 257.30, 273.65, 284.46, 295.26, 301.53, 310.67, 291.53, 298.15, 291.37, 293.77, 281.47, 274.94, 277.48, 271.19, 272.90])
+#años = np.array([1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017])
+#consumos = np.array([126.56, 128.53, 132.66, 138.75, 147.05, 151.21, 154.75, 156.69, 155.46, 160.90, 165.60, 173.37, 189.14, 193.39, 205.63, 220.92, 233.07, 239.91, 257.30, 273.65, 284.46, 295.26, 301.53, 310.67, 291.53, 298.15, 291.37, 293.77, 281.47, 274.94, 277.48, 271.19, 272.90])
 
 # Crear y entrenar un modelo de regresión con TensorFlow
 model_tf = tf.keras.Sequential([
@@ -151,14 +169,14 @@ label_resultado = tk.Label(ventana, text="")
 label_imagen = tk.Label(ventana)
 
 # Cargar una imagen para mostrar
-imagen = Image.open("C:/xampp/htdocs/tensorflow/tensorflow/tensorflow/static/imgs/lineas.jpg")
-imagen = imagen.resize((400, 200), Image.ANTIALIAS)
-imagen = ImageTk.PhotoImage(imagen)
-label_imagen.config(image=imagen)
-label_imagen.image = imagen
+#imagen = Image.open("C:/xampp/htdocs/tensorflow/tensorflow/tensorflow/static/imgs/lineas.jpg")
+#imagen = imagen.resize((400, 200), Image.ANTIALIAS)
+#imagen = ImageTk.PhotoImage(imagen)
+#label_imagen.config(image=imagen)
+#label_imagen.image = imagen
 
 # Colocar elementos en la ventana
-label_imagen.pack()
+#label_imagen.pack()
 label_año.pack()
 entry_año.pack()
 boton_predecir_tensorflow.pack()
@@ -170,4 +188,6 @@ boton.pack()
 
 # Iniciar la ventana
 ventana.mainloop()
+
+
 
